@@ -162,6 +162,46 @@ func TestJsonResponseJSONEncodesObject(t *testing.T) {
 	}
 }
 
+func TestErrorResponseWritesStatusCode(t *testing.T) {
+	response := ErrorResponse{
+		StatusCode: 503,
+		Message:    "service unavailable",
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 503 {
+		t.Errorf("Expected 503, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestErrorResponseSetsMessage(t *testing.T) {
+	response := ErrorResponse{
+		StatusCode: 503,
+		Message:    "service unavailable",
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "service unavailable" {
+		t.Errorf("Expected 'service unavailable', got %s", string(writer.writeArg))
+	}
+}
+
+func TestErrorResponseSetsMessageAndError(t *testing.T) {
+	response := ErrorResponse{
+		StatusCode: 503,
+		Message:    "service unavailable",
+		Error:      fmt.Errorf("error"),
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "service unavailable: error" {
+		t.Errorf("Expected 'service unavailable: error', got %s", string(writer.writeArg))
+	}
+}
+
 func TestBadRequestResponseWritesStatusCode(t *testing.T) {
 	response := BadRequest{}
 	writer := &mockResponseWriter{}
@@ -191,5 +231,37 @@ func TestBadRequestSetsMessageAndError(t *testing.T) {
 	response.Write(writer)
 	if string(writer.writeArg) != "bad request: error" {
 		t.Errorf("Expected 'bad request: error', got %s", string(writer.writeArg))
+	}
+}
+
+func TestInternalServerErrorResponseWritesStatusCode(t *testing.T) {
+	response := InternalServerError{}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 500 {
+		t.Errorf("Expected 500, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestInternalServerErrorSetsMessage(t *testing.T) {
+	response := InternalServerError{}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "internal server error" {
+		t.Errorf("Expected 'internal server error', got %s", string(writer.writeArg))
+	}
+}
+
+func TestInternalServerErrorSetsMessageAndError(t *testing.T) {
+	response := InternalServerError{
+		Error: fmt.Errorf("error"),
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "internal server error: error" {
+		t.Errorf("Expected 'internal server error: error', got %s", string(writer.writeArg))
 	}
 }
