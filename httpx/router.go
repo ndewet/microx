@@ -3,13 +3,8 @@ package httpx
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 )
-
-// Response is a type alias for http.Response.
-type Request http.Request
-
-// Handler is any function that handles an HTTP request and returns an (Response, error) tuple.
-type Handler = func(Request) (Response, error)
 
 type Multiplexer interface {
 	Handle(pattern string, handler http.Handler)
@@ -83,24 +78,6 @@ func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	router.multiplexer.ServeHTTP(writer, request)
 }
 
-// adapt adapts a handler to the http.HandlerFunc interface by ensuring the the return response is written to the http.ResponseWriter.
-// It recovers from panics and any errors returned by the handler.
-// Both cases result in an 500 response.
-func adapt(handler Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				InternalServerError{fmt.Errorf("internal server error")}.Write(writer)
-			}
-		}()
-		response, err := handler(Request(*request))
-		if err != nil {
-			response = InternalServerError{fmt.Errorf("internal server error")}
-		}
-		response.Write(writer)
-	})
-}
-
 // validate validates the path.
 // The path must start with a "/" and end with a "/".
 // The path must not contain spaces.
@@ -109,23 +86,8 @@ func adapt(handler Handler) http.Handler {
 // Panics if the path is invalid.
 // TODO: Add more validation rules. Use REGEXP?
 func validate(path string) {
-	if len(path) == 0 {
-		panic("path can not be empty")
-	}
-	if path[0] != '/' {
-		panic("path must start with /")
-	}
-	if path[len(path)-1] != '/' {
-		panic("path must end with /")
-	}
-	for i := 1; i < len(path)-1; i++ {
-		if path[i] == '/' && path[i+1] == '/' {
-			panic("path must not contain consecutive slashes")
-		}
-	}
-	for i := 0; i < len(path); i++ {
-		if path[i] == ' ' {
-			panic("path must not contain spaces")
-		}
+	regex := `^\/(?:[^\/\s{}]+|{[^\/\s{}]+})*(?:\/(?:[^\/\s{}]+|{[^\/\s{}]+}))*\/$`
+	if !regexp.MustCompile(regex).MatchString(path) {
+		panic("path is invalid")
 	}
 }
