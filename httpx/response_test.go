@@ -283,3 +283,24 @@ func TestInternalServerErrorSetsMessageAndError(t *testing.T) {
 		t.Errorf("Expected 'internal server error: error', got %s", string(writer.writeArg))
 	}
 }
+
+func TestServiceUnavailableSetsStatusCode(t *testing.T) {
+	response := ServiceUnavailable{}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 503 {
+		t.Errorf("Expected 503, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestServiceNotAvailableSetsMessage(t *testing.T) {
+	response := ServiceUnavailable{}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "service unavailable" {
+		t.Errorf("Expected 'service unavailable', got %s", string(writer.writeArg))
+	}
+}
