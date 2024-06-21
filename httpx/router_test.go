@@ -100,3 +100,17 @@ func TestRouteCallsHandleOnMultiplexer(t *testing.T) {
 		t.Error("Handler is nil", router.multiplexer.(*mockMultiplexer).routes)
 	}
 }
+
+func TestLinkingARouter(t *testing.T) {
+	router := NewRouter()
+	otherRouter := NewRouter()
+	multiplexer := &mockMultiplexer{}
+	router.multiplexer = multiplexer
+	router.Link("/path/", otherRouter)
+	if multiplexer.routes == nil {
+		t.Error("Routes is nil")
+	}
+	if multiplexer.routes["/path/"] == otherRouter {
+		t.Error("Handler is nil", multiplexer.routes)
+	}
+}
