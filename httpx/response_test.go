@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -116,5 +117,82 @@ func TestObjectResponseJSONEncodesObject(t *testing.T) {
 	response.Write(writer)
 	if string(writer.writeArg) != `{"#":"Hello, World!"}` {
 		t.Errorf("Expected {\"#\":\"Hello, World!\"}, got %s", string(writer.writeArg))
+	}
+}
+
+func TestJsonResponseWritesStatusCode(t *testing.T) {
+	response := JSONResponse{
+		StatusCode: 200,
+		Body:       map[string]interface{}{},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 200 {
+		t.Errorf("Expected 200, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestJsonResponseSetsJSONResponseType(t *testing.T) {
+	response := JSONResponse{
+		StatusCode: 200,
+		Body:       map[string]interface{}{},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.headerCalled {
+		t.Error("Header not called")
+	}
+	if writer.header.Get("Content-Type") != "application/json" {
+		t.Errorf("Expected application/json, got %s", writer.header.Get("Content-Type"))
+	}
+}
+
+func TestJsonResponseJSONEncodesObject(t *testing.T) {
+	response := JSONResponse{
+		StatusCode: 200,
+		Body:       map[string]interface{}{"#": "Hello, World!"},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != `{"#":"Hello, World!"}` {
+		t.Errorf("Expected {\"#\":\"Hello, World!\"}, got %s", string(writer.writeArg))
+	}
+}
+
+func TestBadRequestResponseWritesStatusCode(t *testing.T) {
+	response := BadRequest{}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 400 {
+		t.Errorf("Expected 400, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestBadRequestSetsMessage(t *testing.T) {
+	response := BadRequest{
+		Message: "bad request",
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "bad request" {
+		t.Errorf("Expected 'bad request', got %s", string(writer.writeArg))
+	}
+}
+
+func TestBadRequestSetsMessageAndError(t *testing.T) {
+	response := BadRequest{
+		Message: "bad request",
+		Error:   fmt.Errorf("error"),
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != "bad request: error" {
+		t.Errorf("Expected 'bad request: error', got %s", string(writer.writeArg))
 	}
 }
