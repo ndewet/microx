@@ -102,6 +102,7 @@ func adapt(handler Handler) http.Handler {
 // The path must not contain consecutive slashes.
 // The path must not be empty.
 // Panics if the path is invalid.
+// TODO: Add more validation rules. Use REGEXP?
 func validate(path string) {
 	if len(path) == 0 {
 		panic("path can not be empty")
