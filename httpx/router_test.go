@@ -110,7 +110,21 @@ func TestLinkingARouter(t *testing.T) {
 	if multiplexer.routes == nil {
 		t.Error("Routes is nil")
 	}
-	if multiplexer.routes["/path/"] == otherRouter {
+	if multiplexer.routes["/path/"] == nil {
+		t.Error("Handler is nil", multiplexer.routes)
+	}
+}
+
+func TestMergingARouter(t *testing.T) {
+	router := NewRouter()
+	otherRouter := NewRouter()
+	multiplexer := &mockMultiplexer{}
+	router.multiplexer = multiplexer
+	router.Merge(otherRouter)
+	if multiplexer.routes == nil {
+		t.Error("Routes is nil")
+	}
+	if multiplexer.routes["/"] == nil {
 		t.Error("Handler is nil", multiplexer.routes)
 	}
 }

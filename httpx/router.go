@@ -74,6 +74,10 @@ func (router *Router) Link(path string, otherRouter *Router) *Router {
 	return router
 }
 
+func (router *Router) Merge(otherRouter *Router) *Router {
+	return router.Link("/", otherRouter)
+}
+
 func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	router.multiplexer.ServeHTTP(writer, request)
 }
