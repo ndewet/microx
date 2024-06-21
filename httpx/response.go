@@ -6,8 +6,14 @@ import (
 	"net/http"
 )
 
+type ResponseWriter interface {
+	Write([]byte) (int, error)
+	WriteHeader(int)
+	Header() http.Header
+}
+
 type Response interface {
-	Write(http.ResponseWriter) error
+	Write(ResponseWriter) error
 }
 
 type RawResponse struct {
@@ -16,7 +22,7 @@ type RawResponse struct {
 	Body       []byte
 }
 
-func (response RawResponse) Write(writer http.ResponseWriter) error {
+func (response RawResponse) Write(writer ResponseWriter) error {
 	writer.WriteHeader(response.StatusCode)
 	for key, value := range response.Headers {
 		writer.Header().Set(key, value)
@@ -31,7 +37,7 @@ type ObjectResponse struct {
 	Body       interface{}
 }
 
-func (response ObjectResponse) Write(writer http.ResponseWriter) error {
+func (response ObjectResponse) Write(writer ResponseWriter) error {
 	serializedBody, err := json.Marshal(response.Body)
 	if err != nil {
 		return InternalServerError{err}.Write(writer)
@@ -49,7 +55,7 @@ type JSONResponse struct {
 	Body       map[string]interface{}
 }
 
-func (response JSONResponse) Write(writer http.ResponseWriter) error {
+func (response JSONResponse) Write(writer ResponseWriter) error {
 	return ObjectResponse{
 		StatusCode: response.StatusCode,
 		Headers:    response.Headers,
@@ -61,7 +67,7 @@ type InternalServerError struct {
 	Error error
 }
 
-func (response InternalServerError) Write(writer http.ResponseWriter) error {
+func (response InternalServerError) Write(writer ResponseWriter) error {
 	return RawResponse{
 		StatusCode: 500,
 		Body:       []byte(response.Error.Error()),
@@ -70,7 +76,7 @@ func (response InternalServerError) Write(writer http.ResponseWriter) error {
 
 type ServiceUnavailable struct{}
 
-func (response ServiceUnavailable) Write(writer http.ResponseWriter) error {
+func (response ServiceUnavailable) Write(writer ResponseWriter) error {
 	return RawResponse{
 		StatusCode: 503,
 		Body:       []byte("service unavailable"),
@@ -82,7 +88,7 @@ type BadRequest struct {
 	Error   error
 }
 
-func (response BadRequest) Write(writer http.ResponseWriter) error {
+func (response BadRequest) Write(writer ResponseWriter) error {
 	var body []byte
 	if response.Error == nil {
 		body = []byte(response.Message)
