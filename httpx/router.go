@@ -11,12 +11,17 @@ type Request http.Request
 // Handler is any function that handles an HTTP request and returns an (Response, error) tuple.
 type Handler = func(Request) (Response, error)
 
+type Multiplexer interface {
+	Handle(pattern string, handler http.Handler)
+	ServeHTTP(writer http.ResponseWriter, request *http.Request)
+}
+
 type Router struct {
-	multiplexer *http.ServeMux
+	multiplexer Multiplexer
 }
 
 func NewRouter() *Router {
-	multiplexer := http.NewServeMux()
+	multiplexer := Multiplexer(http.NewServeMux())
 	return &Router{multiplexer}
 }
 
