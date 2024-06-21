@@ -78,13 +78,6 @@ func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	router.multiplexer.ServeHTTP(writer, request)
 }
 
-// validate validates the path.
-// The path must start with a "/" and end with a "/".
-// The path must not contain spaces.
-// The path must not contain consecutive slashes.
-// The path must not be empty.
-// Panics if the path is invalid.
-// TODO: Add more validation rules. Use REGEXP?
 func validate(path string) {
 	regex := `^\/(?:[^\/\s{}]+|{[^\/\s{}]+})*(?:\/(?:[^\/\s{}]+|{[^\/\s{}]+}))*\/$`
 	if !regexp.MustCompile(regex).MatchString(path) {
