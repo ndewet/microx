@@ -133,6 +133,9 @@ func TestObjectResponseRaisesInternalServerErrorOnJSONEncodingError(t *testing.T
 	if writer.writeHeaderArg != 500 {
 		t.Errorf("Expected 500, got %d", writer.writeHeaderArg)
 	}
+	if string(writer.writeArg) != "internal server error: json: unsupported type: chan int" {
+		t.Errorf("Expected 'internal server error', got %s", writer.writeArg)
+	}
 }
 
 func TestJsonResponseWritesStatusCode(t *testing.T) {
