@@ -76,3 +76,45 @@ func TestRawResponseWritesStatusCode(t *testing.T) {
 		t.Errorf("Expected 200, got %d", writer.writeHeaderArg)
 	}
 }
+
+func TestObjectResponseWritesStatusCode(t *testing.T) {
+	response := ObjectResponse{
+		StatusCode: 200,
+		Body:       map[string]interface{}{},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 200 {
+		t.Errorf("Expected 200, got %d", writer.writeHeaderArg)
+	}
+}
+
+func TestObjectResponseSetsJSONResponseType(t *testing.T) {
+	response := ObjectResponse{
+		StatusCode: 200,
+		Body:       map[string]interface{}{},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.headerCalled {
+		t.Error("Header not called")
+	}
+	if writer.header.Get("Content-Type") != "application/json" {
+		t.Errorf("Expected application/json, got %s", writer.header.Get("Content-Type"))
+	}
+}
+
+func TestObjectResponseJSONEncodesObject(t *testing.T) {
+	response := ObjectResponse{
+		StatusCode: 200,
+		Body:       map[string]string{"#": "Hello, World!"},
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if string(writer.writeArg) != `{"#":"Hello, World!"}` {
+		t.Errorf("Expected {\"#\":\"Hello, World!\"}, got %s", string(writer.writeArg))
+	}
+}
