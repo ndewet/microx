@@ -10,10 +10,12 @@ func handler(Request) (Response, error) {
 }
 
 type mockMultiplexer struct {
-	routes map[string]http.Handler
+	routes      map[string]http.Handler
+	serveCalled bool
 }
 
 func (m *mockMultiplexer) ServeHTTP(http.ResponseWriter, *http.Request) {
+	m.serveCalled = true
 }
 
 func (m *mockMultiplexer) Handle(path string, handler http.Handler) {
@@ -126,5 +128,18 @@ func TestMergingARouter(t *testing.T) {
 	}
 	if multiplexer.routes["/"] == nil {
 		t.Error("Handler is nil", multiplexer.routes)
+	}
+}
+
+func TestRouterServesHTTP(t *testing.T) {
+	router := NewRouter()
+	multiplexer := &mockMultiplexer{}
+	router.multiplexer = multiplexer
+	writer := &mockResponseWriter{}
+	request := &http.Request{}
+
+	router.ServeHTTP(writer, request)
+	if !router.multiplexer.(*mockMultiplexer).serveCalled {
+		t.Error("Serve not called")
 	}
 }
