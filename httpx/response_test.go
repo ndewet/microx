@@ -120,6 +120,21 @@ func TestObjectResponseJSONEncodesObject(t *testing.T) {
 	}
 }
 
+func TestObjectResponseRaisesInternalServerErrorOnJSONEncodingError(t *testing.T) {
+	response := ObjectResponse{
+		StatusCode: 200,
+		Body:       make(chan int),
+	}
+	writer := &mockResponseWriter{}
+	response.Write(writer)
+	if !writer.writeHeaderCalled {
+		t.Error("WriteHeader not called")
+	}
+	if writer.writeHeaderArg != 500 {
+		t.Errorf("Expected 500, got %d", writer.writeHeaderArg)
+	}
+}
+
 func TestJsonResponseWritesStatusCode(t *testing.T) {
 	response := JSONResponse{
 		StatusCode: 200,
