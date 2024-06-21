@@ -63,14 +63,34 @@ func (response JSONResponse) Write(writer ResponseWriter) error {
 	}.Write(writer)
 }
 
+type ErrorResponse struct {
+	StatusCode int
+	Message    string
+	Error      error
+}
+
+func (response ErrorResponse) Write(writer ResponseWriter) error {
+	var body []byte
+	if response.Error == nil {
+		body = []byte(response.Message)
+	} else {
+		body = []byte(fmt.Sprintf("%s: %s", response.Message, response.Error))
+	}
+	return RawResponse{
+		StatusCode: response.StatusCode,
+		Body:       body,
+	}.Write(writer)
+}
+
 type InternalServerError struct {
 	Error error
 }
 
 func (response InternalServerError) Write(writer ResponseWriter) error {
-	return RawResponse{
+	return ErrorResponse{
 		StatusCode: 500,
-		Body:       []byte(response.Error.Error()),
+		Message:    "internal server error",
+		Error:      response.Error,
 	}.Write(writer)
 }
 
@@ -84,19 +104,13 @@ func (response ServiceUnavailable) Write(writer ResponseWriter) error {
 }
 
 type BadRequest struct {
-	Message string
-	Error   error
+	Error error
 }
 
 func (response BadRequest) Write(writer ResponseWriter) error {
-	var body []byte
-	if response.Error == nil {
-		body = []byte(response.Message)
-	} else {
-		body = []byte(fmt.Sprintf("%s: %s", response.Message, response.Error))
-	}
-	return RawResponse{
+	return ErrorResponse{
 		StatusCode: 400,
-		Body:       body,
+		Message:    "bad request",
+		Error:      response.Error,
 	}.Write(writer)
 }

@@ -175,9 +175,7 @@ func TestBadRequestResponseWritesStatusCode(t *testing.T) {
 }
 
 func TestBadRequestSetsMessage(t *testing.T) {
-	response := BadRequest{
-		Message: "bad request",
-	}
+	response := BadRequest{}
 	writer := &mockResponseWriter{}
 	response.Write(writer)
 	if string(writer.writeArg) != "bad request" {
@@ -187,8 +185,7 @@ func TestBadRequestSetsMessage(t *testing.T) {
 
 func TestBadRequestSetsMessageAndError(t *testing.T) {
 	response := BadRequest{
-		Message: "bad request",
-		Error:   fmt.Errorf("error"),
+		Error: fmt.Errorf("error"),
 	}
 	writer := &mockResponseWriter{}
 	response.Write(writer)
