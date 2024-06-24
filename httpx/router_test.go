@@ -1,29 +1,14 @@
 package httpx
 
 import (
-	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-func handler(Request) (Response, error) {
-	return nil, nil
-}
-
-type mockMultiplexer struct {
-	routes      map[string]http.Handler
-	serveCalled bool
-}
-
-func (m *mockMultiplexer) ServeHTTP(http.ResponseWriter, *http.Request) {
-	m.serveCalled = true
-}
-
-func (m *mockMultiplexer) Handle(path string, handler http.Handler) {
-	if m.routes == nil {
-		m.routes = make(map[string]http.Handler)
-	}
-	m.routes[path] = handler
-}
+const ROOT_PATH = "/root/"
+const MOCK_PATH = "/path/"
+const MOCK_LINK = "/link/"
+const MOCK_LINKED_PATH = "/link/path/"
 
 func TestValidatePath(t *testing.T) {
 	validate("/some/legal/path/with/{param}/")
@@ -90,56 +75,49 @@ func TestCanCreateRouter(t *testing.T) {
 	}
 }
 
-func TestRouteCallsHandleOnMultiplexer(t *testing.T) {
+func TestRouteDirectsRequestsToHandler(t *testing.T) {
 	router := NewRouter()
-	multiplexer := &mockMultiplexer{}
-	router.multiplexer = multiplexer
-	router.Route(GET, "/path/", handler)
-	if multiplexer.routes == nil {
-		t.Error("Routes is nil")
-	}
-	if multiplexer.routes["GET /path/"] == nil {
-		t.Error("Handler is nil", router.multiplexer.(*mockMultiplexer).routes)
+	handler, details := CreateMockHandler()
+	router.Route(GET, MOCK_PATH, handler)
+	request := CreateMockHTTPRequest(GET, MOCK_PATH)
+	router.ServeHTTP(httptest.NewRecorder(), request)
+	if details.HandlerCallCount != 1 {
+		t.Error("Handler not called!")
 	}
 }
 
-func TestLinkingARouter(t *testing.T) {
-	router := NewRouter()
+func TestLinkingARouterDirectsRequestsToHandlerAtLinkedPath(t *testing.T) {
 	otherRouter := NewRouter()
-	multiplexer := &mockMultiplexer{}
-	router.multiplexer = multiplexer
-	router.Link("/path/", otherRouter)
-	if multiplexer.routes == nil {
-		t.Error("Routes is nil")
-	}
-	if multiplexer.routes["/path/"] == nil {
-		t.Error("Handler is nil", multiplexer.routes)
+	handler, details := CreateMockHandler()
+	otherRouter.Route(GET, MOCK_PATH, handler)
+
+	router := NewRouter()
+	router.Link(MOCK_LINK, otherRouter)
+	request := CreateMockHTTPRequest(GET, MOCK_LINKED_PATH)
+	router.ServeHTTP(httptest.NewRecorder(), request)
+	if details.HandlerCallCount != 1 {
+		t.Errorf("Linked handler called %d times!", details.HandlerCallCount)
 	}
 }
 
 func TestMergingARouter(t *testing.T) {
-	router := NewRouter()
 	otherRouter := NewRouter()
-	multiplexer := &mockMultiplexer{}
-	router.multiplexer = multiplexer
-	router.Merge(otherRouter)
-	if multiplexer.routes == nil {
-		t.Error("Routes is nil")
-	}
-	if multiplexer.routes["/"] == nil {
-		t.Error("Handler is nil", multiplexer.routes)
-	}
-}
+	otherHandler, otherDetails := CreateMockHandler()
+	otherRouter.Route(GET, MOCK_PATH, otherHandler)
 
-func TestRouterServesHTTP(t *testing.T) {
 	router := NewRouter()
-	multiplexer := &mockMultiplexer{}
-	router.multiplexer = multiplexer
-	writer := &mockResponseWriter{}
-	request := &http.Request{}
+	handler, details := CreateMockHandler()
 
-	router.ServeHTTP(writer, request)
-	if !router.multiplexer.(*mockMultiplexer).serveCalled {
-		t.Error("Serve not called")
+	router.Merge(otherRouter)
+	router.Route(GET, ROOT_PATH, handler)
+
+	router.ServeHTTP(httptest.NewRecorder(), CreateMockHTTPRequest(GET, MOCK_PATH))
+	if otherDetails.HandlerCallCount != 1 {
+		t.Errorf("Merged handler called %d times!", otherDetails.HandlerCallCount)
+	}
+
+	router.ServeHTTP(httptest.NewRecorder(), CreateMockHTTPRequest(GET, ROOT_PATH))
+	if details.HandlerCallCount != 1 {
+		t.Errorf("Root called %d times!", otherDetails.HandlerCallCount)
 	}
 }

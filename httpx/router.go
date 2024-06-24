@@ -20,35 +20,6 @@ func NewRouter() *Router {
 	return &Router{multiplexer}
 }
 
-// CreateRouter creates a router from a map of routes and a map of routers.
-// The routes map maps methods to paths to handlers.
-// The routers map maps paths to routers.
-// The paths must not overlap.
-func CreateRouter(routes map[Method]map[string]Handler, routers map[string]*Router) *Router {
-	router := NewRouter()
-	for method, routes := range routes {
-		for path, handler := range routes {
-			router.Route(method, path, handler)
-		}
-	}
-	for path, subRouter := range routers {
-		router.Link(path, subRouter)
-	}
-	return router
-}
-
-// CreateRouterWithPrefix creates a router with the given prefix from a map of routes and a map of routers.
-//
-// The prefix must be a valid path.
-// Useful for creating versioned APIs.
-func CreateRouterWithPrefix(prefix string, routes map[Method]map[string]Handler, routers map[string]*Router) *Router {
-	return NewRouter().Link(
-		prefix,
-		CreateRouter(routes, routers),
-	)
-
-}
-
 // Route registers a handler for the given method and path.
 // The path must start with a "/" and end with a "/".
 // The path must not contain spaces.
@@ -65,12 +36,12 @@ func (router *Router) Route(method Method, path string, handler Handler) *Router
 // When path == "/", this is equivalent to merging the routers.
 func (router *Router) Link(path string, otherRouter *Router) *Router {
 	if path == "/" {
-		router.multiplexer.Handle(path, otherRouter.multiplexer)
+		router.multiplexer.Handle(path, otherRouter)
 		return router
 	}
 	validate(path)
 	prefix := path[:len(path)-1]
-	router.multiplexer.Handle(path, http.StripPrefix(prefix, otherRouter.multiplexer))
+	router.multiplexer.Handle(path, http.StripPrefix(prefix, otherRouter))
 	return router
 }
 
@@ -83,6 +54,9 @@ func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 }
 
 func validate(path string) {
+	if path == "/" {
+		return
+	}
 	regex := `^\/(?:[^\/\s{}]+|{[^\/\s{}]+})*(?:\/(?:[^\/\s{}]+|{[^\/\s{}]+}))*\/$`
 	if !regexp.MustCompile(regex).MatchString(path) {
 		panic("path is invalid")
