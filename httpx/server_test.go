@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const EOF_ERROR = "Get \"http://127.0.0.1:8000/\": EOF"
+const EOF_ERROR = "Get \"http://localhost:8000/\": EOF"
 
 var SERVER_MUTEX = sync.Mutex{}
 
@@ -54,7 +54,7 @@ func TestWithMiddlewareAddsMiddleware(t *testing.T) {
 }
 
 func TestMiddlewareIsApplied(t *testing.T) {
-	server := NewServer("127.0.0.1:8000")
+	server := NewServer("localhost:8000")
 	middlewareCalled := false
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -77,7 +77,7 @@ func TestMiddlewareIsApplied(t *testing.T) {
 	server.WithRouter(router)
 	go server.Start()
 	defer server.Shutdown()
-	_, err := http.Get("http://127.0.0.1:8000/")
+	_, err := http.Get("http://localhost:8000/")
 	if err != nil {
 		t.Errorf("Failed to make request, got %v", err)
 	}
@@ -104,12 +104,12 @@ func TestShutdownClosesGracefully(t *testing.T) {
 			Body:       []byte("Hello, World!"),
 		}, nil
 	})
-	server := NewServer("127.0.0.1:8888")
+	server := NewServer("localhost:8888")
 	server.WithRouter(router)
 	go server.Start()
 	requestErrorChannel := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://127.0.0.1:8888/")
+		_, err := http.Get("http://localhost:8888/")
 		requestErrorChannel <- err
 	}()
 	<-requestReceived
@@ -135,12 +135,12 @@ func TestForceShutdownClosesAllConnections(t *testing.T) {
 			Body:       []byte("Hello, World!"),
 		}, nil
 	})
-	server := NewServer("127.0.0.1:8000")
+	server := NewServer("localhost:8000")
 	server.WithRouter(router)
 	go server.Start()
 	requestErrorChannel := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://127.0.0.1:8000/")
+		_, err := http.Get("http://localhost:8000/")
 		requestErrorChannel <- err
 	}()
 	<-requestReceived
