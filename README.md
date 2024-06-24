@@ -3,4 +3,6 @@
 
 A Golang microservices framework
 
+## Testing
 
+![test_graph](https://codecov.io/github/ndewet/microx/graphs/sunburst.svg?token=7QBUP8QMU5)
