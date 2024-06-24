@@ -55,19 +55,20 @@ func TestWithMiddlewareAddsMiddleware(t *testing.T) {
 
 func TestMiddlewareIsApplied(t *testing.T) {
 	server := NewServer("127.0.0.1:8000")
-	middlewareCalled := make(chan bool, 1)
+	middlewareCalled := false
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			middlewareCalled <- true
+			middlewareCalled = true
 			next.ServeHTTP(writer, request)
 		})
 	}
 	server.WithMiddleware(middleware)
 	router := NewRouter()
-	handlerCalled := make(chan bool, 1)
+	middlewareCalledBeforeHandler := false
+	handlerCalled := false
 	router.Route(http.MethodGet, "/", func(r Request) (Response, error) {
-		<-middlewareCalled
-		handlerCalled <- true
+		middlewareCalledBeforeHandler = middlewareCalled
+		handlerCalled = true
 		return RawResponse{
 			StatusCode: 200,
 			Body:       []byte("Hello, World!"),
@@ -80,7 +81,13 @@ func TestMiddlewareIsApplied(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to make request, got %v", err)
 	}
-	if !<-handlerCalled {
+	if !middlewareCalled {
+		t.Error("Middleware not called")
+	}
+	if !middlewareCalledBeforeHandler {
+		t.Error("Middleware not called before handler")
+	}
+	if !handlerCalled {
 		t.Error("Handler not called")
 	}
 }
