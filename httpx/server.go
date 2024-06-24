@@ -14,6 +14,7 @@ type Server struct {
 	middleware []Middleware
 	// router is the router used by the server.
 	router *Router
+	Closed *bool
 }
 
 // NewServer creates a new HTTP server listening on the given address.
@@ -53,8 +54,8 @@ func (server *Server) Shutdown() error {
 // It does not wait for connections to close.
 //
 // see http.Server.Close for more details.
-func (server *Server) ForceShutdown() {
-	server.server.Close()
+func (server *Server) ForceShutdown() error {
+	return server.server.Close()
 }
 
 // Start starts the server.

@@ -5,9 +5,6 @@ import (
 	"net/http"
 )
 
-// Response is a type alias for http.Response.
-type Request http.Request
-
 // Handler is any function that handles an HTTP request and returns an (Response, error) tuple.
 type Handler = func(Request) (Response, error)
 
