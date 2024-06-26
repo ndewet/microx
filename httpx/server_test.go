@@ -1,20 +1,18 @@
 package httpx
 
 import (
+	"fmt"
 	"net/http"
-	"sync"
 	"testing"
 )
 
 const EOF_ERROR = "Get \"http://localhost:8000/\": EOF"
-
-var SERVER_MUTEX = sync.Mutex{}
+const ADDRESS = "localhost:8000"
 
 func TestNewServerSetsAddress(t *testing.T) {
-	address := "1.1.1.1:0000"
-	server := NewServer(address)
-	if server.server.Addr != address {
-		t.Errorf("Expected address to be %s, got %s", address, server.server.Addr)
+	server := NewServer(ADDRESS)
+	if server.server.Addr != ADDRESS {
+		t.Errorf("Expected address to be %s, got %s", ADDRESS, server.server.Addr)
 	}
 }
 
@@ -54,7 +52,7 @@ func TestWithMiddlewareAddsMiddleware(t *testing.T) {
 }
 
 func TestMiddlewareIsApplied(t *testing.T) {
-	server := NewServer("localhost:8000")
+	server := NewServer(ADDRESS)
 	middlewareCalled := false
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -77,7 +75,7 @@ func TestMiddlewareIsApplied(t *testing.T) {
 	server.WithRouter(router)
 	go server.Start()
 	defer server.Shutdown()
-	_, err := http.Get("http://localhost:8000/")
+	_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
 	if err != nil {
 		t.Errorf("Failed to make request, got %v", err)
 	}
@@ -99,7 +97,7 @@ func TestShutdownClosesGracefully(t *testing.T) {
 	go server.Start()
 	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://localhost:8000/")
+		_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
 		errors <- err
 	}()
 	<-requests
@@ -120,7 +118,7 @@ func TestForceShutdownClosesAllConnections(t *testing.T) {
 	go server.Start()
 	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://localhost:8000/")
+		_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
 		errors <- err
 	}()
 	<-requests
@@ -136,7 +134,7 @@ func TestForceShutdownClosesAllConnections(t *testing.T) {
 }
 
 func createServer(requests chan bool, unblock chan bool) *Server {
-	server := NewServer("localhost:8000")
+	server := NewServer(ADDRESS)
 	router := NewRouter()
 	router.Route(http.MethodGet, "/", func(r Request) (Response, error) {
 		requests <- true
