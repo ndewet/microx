@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+const MOCK_BODY = "Hello, World!"
+const HEADERS_CONTENT_TYPE = "Content-Type"
+const CONTENT_TYPE_JSON = "application/json"
+const CONTENT_TYPE_TEXT = "text/plain"
+
 type MockResponse struct {
 	WriteCounter *int
 }
@@ -31,12 +36,12 @@ func TestRawResponseWritesBody(t *testing.T) {
 func TestRawResponseWritesHeaders(t *testing.T) {
 	response := RawResponse{
 		StatusCode: 500,
-		Headers:    map[string]string{"Content-Type": "text/plain"},
+		Headers:    map[string]string{HEADERS_CONTENT_TYPE: CONTENT_TYPE_TEXT},
 		Body:       []byte(""),
 	}
 	writer := httptest.NewRecorder()
 	response.Write(writer)
-	if writer.Header().Get("Content-Type") != "text/plain" {
+	if writer.Header().Get(HEADERS_CONTENT_TYPE) != CONTENT_TYPE_TEXT {
 		t.Errorf("Expected text/plain, got %s", writer.Header().Get("Content-Type"))
 	}
 }
@@ -72,8 +77,8 @@ func TestObjectResponseSetsJSONResponseType(t *testing.T) {
 	}
 	writer := httptest.NewRecorder()
 	response.Write(writer)
-	if writer.Header().Get("Content-Type") != "application/json" {
-		t.Errorf("Expected application/json, got %s", writer.Header().Get("Content-Type"))
+	if writer.Header().Get(HEADERS_CONTENT_TYPE) != CONTENT_TYPE_JSON {
+		t.Errorf("Expected %s, got %s", CONTENT_TYPE_JSON, writer.Header().Get(HEADERS_CONTENT_TYPE))
 	}
 }
 
@@ -125,8 +130,8 @@ func TestJsonResponseSetsJSONResponseType(t *testing.T) {
 	}
 	writer := httptest.NewRecorder()
 	response.Write(writer)
-	if writer.Header().Get("Content-Type") != "application/json" {
-		t.Errorf("Expected application/json, got %s", writer.Header().Get("Content-Type"))
+	if writer.Header().Get(HEADERS_CONTENT_TYPE) != CONTENT_TYPE_JSON {
+		t.Errorf("Expected %s, got %s", CONTENT_TYPE_JSON, writer.Header().Get("Content-Type"))
 	}
 }
 
