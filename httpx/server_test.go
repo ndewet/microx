@@ -1,13 +1,13 @@
 package httpx
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 )
 
 const EOF_ERROR = "Get \"http://localhost:8000/\": EOF"
 const ADDRESS = "localhost:8000"
+const REQUEST_ADDRESS = "http://localhost:8000/"
 
 func TestNewServerSetsAddress(t *testing.T) {
 	server := NewServer(ADDRESS)
@@ -75,7 +75,7 @@ func TestMiddlewareIsApplied(t *testing.T) {
 	server.WithRouter(router)
 	go server.Start()
 	defer server.Shutdown()
-	_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
+	_, err := http.Get(REQUEST_ADDRESS)
 	if err != nil {
 		t.Errorf("Failed to make request, got %v", err)
 	}
@@ -97,7 +97,7 @@ func TestShutdownClosesGracefully(t *testing.T) {
 	go server.Start()
 	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
+		_, err := http.Get(REQUEST_ADDRESS)
 		errors <- err
 	}()
 	<-requests
@@ -118,7 +118,7 @@ func TestForceShutdownClosesAllConnections(t *testing.T) {
 	go server.Start()
 	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get(fmt.Sprintf("http://%s/", ADDRESS))
+		_, err := http.Get(REQUEST_ADDRESS)
 		errors <- err
 	}()
 	<-requests
