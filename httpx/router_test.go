@@ -9,6 +9,7 @@ const ROOT_PATH = "/root/"
 const MOCK_PATH = "/path/"
 const MOCK_LINK = "/link/"
 const MOCK_LINKED_PATH = "/link/path/"
+const PANIC_EXPECTED_ERROR = "Expected panic, got nil"
 
 func TestValidatePath(t *testing.T) {
 	validate("/some/legal/path/with/{param}/")
@@ -17,7 +18,7 @@ func TestValidatePath(t *testing.T) {
 func TestValidatePathWithSpace(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("/some illegal path/")
@@ -26,7 +27,7 @@ func TestValidatePathWithSpace(t *testing.T) {
 func TestValidatePathWithConsecutiveSlashes(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("/some//illegal/path/")
@@ -35,7 +36,7 @@ func TestValidatePathWithConsecutiveSlashes(t *testing.T) {
 func TestValidatePathWithoutLeadingSlash(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("some/illegal/path/")
@@ -44,7 +45,7 @@ func TestValidatePathWithoutLeadingSlash(t *testing.T) {
 func TestValidatePathWithoutTrailingSlash(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("/some/illegal/path")
@@ -53,7 +54,7 @@ func TestValidatePathWithoutTrailingSlash(t *testing.T) {
 func TestValidatePathWithConsecutiveSlashesAtEnd(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("/some/illegal/path//")
@@ -62,7 +63,7 @@ func TestValidatePathWithConsecutiveSlashesAtEnd(t *testing.T) {
 func TestValidatePathMustNotBeEmpty(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Error("Expected a panic")
+			t.Error(PANIC_EXPECTED_ERROR)
 		}
 	}()
 	validate("")
