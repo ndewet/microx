@@ -2,19 +2,17 @@ package httpx
 
 import (
 	"net/http"
-	"sync"
 	"testing"
 )
 
 const EOF_ERROR = "Get \"http://localhost:8000/\": EOF"
-
-var SERVER_MUTEX = sync.Mutex{}
+const ADDRESS = "localhost:8000"
+const REQUEST_ADDRESS = "http://localhost:8000/"
 
 func TestNewServerSetsAddress(t *testing.T) {
-	address := "1.1.1.1:0000"
-	server := NewServer(address)
-	if server.server.Addr != address {
-		t.Errorf("Expected address to be %s, got %s", address, server.server.Addr)
+	server := NewServer(ADDRESS)
+	if server.server.Addr != ADDRESS {
+		t.Errorf("Expected address to be %s, got %s", ADDRESS, server.server.Addr)
 	}
 }
 
@@ -54,7 +52,7 @@ func TestWithMiddlewareAddsMiddleware(t *testing.T) {
 }
 
 func TestMiddlewareIsApplied(t *testing.T) {
-	server := NewServer("localhost:8000")
+	server := NewServer(ADDRESS)
 	middlewareCalled := false
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -77,7 +75,7 @@ func TestMiddlewareIsApplied(t *testing.T) {
 	server.WithRouter(router)
 	go server.Start()
 	defer server.Shutdown()
-	_, err := http.Get("http://localhost:8000/")
+	_, err := http.Get(REQUEST_ADDRESS)
 	if err != nil {
 		t.Errorf("Failed to make request, got %v", err)
 	}
@@ -93,64 +91,59 @@ func TestMiddlewareIsApplied(t *testing.T) {
 }
 
 func TestShutdownClosesGracefully(t *testing.T) {
-	router := NewRouter()
-	requestReceived := make(chan bool, 1)
-	routerShutdown := make(chan bool, 1)
-	router.Route(http.MethodGet, "/", func(r Request) (Response, error) {
-		requestReceived <- true
-		<-routerShutdown
-		return RawResponse{
-			StatusCode: 200,
-			Body:       []byte("Hello, World!"),
-		}, nil
-	})
-	server := NewServer("localhost:8888")
-	server.WithRouter(router)
+	requests := make(chan bool, 1)
+	unblock := make(chan bool, 1)
+	server := createServer(requests, unblock)
 	go server.Start()
-	requestErrorChannel := make(chan error, 1)
+	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://localhost:8888/")
-		requestErrorChannel <- err
+		_, err := http.Get(REQUEST_ADDRESS)
+		errors <- err
 	}()
-	<-requestReceived
+	<-requests
 	server.server.RegisterOnShutdown(func() {
-		routerShutdown <- true
+		unblock <- true
 	})
 	go server.Shutdown()
-	err := <-requestErrorChannel
+	err := <-errors
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
 }
 
 func TestForceShutdownClosesAllConnections(t *testing.T) {
-	router := NewRouter()
-	requestReceived := make(chan bool, 1)
-	routerShutdown := make(chan bool, 1)
-	router.Route(http.MethodGet, "/", func(r Request) (Response, error) {
-		requestReceived <- true
-		<-routerShutdown
-		return RawResponse{
-			StatusCode: 200,
-			Body:       []byte("Hello, World!"),
-		}, nil
-	})
-	server := NewServer("localhost:8000")
-	server.WithRouter(router)
+	requests := make(chan bool, 1)
+	unblock := make(chan bool, 1)
+	server := createServer(requests, unblock)
 	go server.Start()
-	requestErrorChannel := make(chan error, 1)
+	errors := make(chan error, 1)
 	go func() {
-		_, err := http.Get("http://localhost:8000/")
-		requestErrorChannel <- err
+		_, err := http.Get(REQUEST_ADDRESS)
+		errors <- err
 	}()
-	<-requestReceived
+	<-requests
 	server.ForceShutdown()
-	routerShutdown <- true
-	err := <-requestErrorChannel
+	unblock <- true
+	err := <-errors
 	if err == nil {
 		t.Error("Expected error, got nil")
 	}
 	if err.Error() != EOF_ERROR {
 		t.Errorf("Expected %s, got %s", EOF_ERROR, err)
 	}
+}
+
+func createServer(requests chan bool, unblock chan bool) *Server {
+	server := NewServer(ADDRESS)
+	router := NewRouter()
+	router.Route(http.MethodGet, "/", func(r Request) (Response, error) {
+		requests <- true
+		<-unblock
+		return RawResponse{
+			StatusCode: 200,
+			Body:       []byte("Hello, World!"),
+		}, nil
+	})
+	server.WithRouter(router)
+	return server
 }
